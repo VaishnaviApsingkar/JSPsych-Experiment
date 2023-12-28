@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>NoLab-test</title>
+    <meta charset="utf-8">
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="static//jspsych.js"></script>
+    <script src="static//NoLab-test-stimuli.js"></script>
+    <script src="static//plugins/jspsych-preload.js"></script>
+    <script src="static//plugins/jspsych-fullscreen.js"></script>
+    <script src="static//plugins/jspsych-image-keyboard-response.js"></script>
+    <script src="static//plugins/jspsych-html-keyboard-response.js"></script>
+    <script src="static//plugins/jspsych-html-button-response.js"></script>
+    <script src="static//plugins/jspsych-image-button-response.js"></script>
+    <script src="static//plugins/jspsych-html-audio-response-audiotest.js"></script>
+    <script src="static//plugins/jspsych-audio-keyboard-response.js"></script>
+    <script src="static//plugins/jspsych-audio-button-response.js"></script>
+    <script src="static//plugins/jspsych-html-audio-response.js"></script>
+    <script src="static//plugins/jspsych-resize.js"></script>
+    <script src="static//plugins/jspsych-test-motion-event-audio-response.js"></script>
+    <link rel="stylesheet" href="static//css/jspsych.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/snap.svg/0.4.1/snap.svg-min.js"></script>
+    <script src="static//plugins/snap.svg.js"></script>
+    <script src="static//plugins/jspsych-survey-text.js"></script>
+    <script src="static//plugins/jspsych-survey-multi-choice.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@svgdotjs/svg.js@3.0/dist/svg.min.js"></script>
+    <script type="text/javascript" src="static//plugins/jspsych-pavlovia-2020.4.js"></script>
+
+    <script src="static/NoLab-test-stimuli.js"></script> <!-- file with all trials-->
+
+    <link rel="stylesheet" href="static//css/jspsych.css">
+  </head>
+
+  <body>
+
+        <!-- Put a button here, id = "start-button" -->    
+     <div class="jspsych-content"><button id="start-button" style="height:100px;width:300px" class="jspsych-btn">Click here to begin</button></div>
+
+
+  </body>
+
+<script>
+ 
+	
+    function getExperiment() {
+      var urlparts = window.location.href.split("/");
+      return urlparts[urlparts.length - 2];
+    }
+
+    var subID = jsPsych.randomization.randomID(6); // random 6-digit subject ID number
+
+    // add subject id to every trial
+    jsPsych.data.addProperties({
+      subjectID: subID,
+    });
+    
+
+  var welcome = {
+    type: 'fullscreen',
+    fullscreen_mode: true,
+    message: 
+    "<p> Welcome! Click below to enter full screen and view your trials. </p>"+
+      "<p></p>", // this just adds space between instructions and button
+      button_label: 'enter fullscreen',
+      button_html: "<a class='jspsych-btn' style = 'position: absolute; bottom: 5%; right: 50%; height:20px;width:80px;  font-size: 10px;'>%choice%</a>",
+  };
+
+
+    // var main_trial = 
+    //   {
+    //   type: 'test-motion-event-audio-response',
+    //   turn:  'right',
+    //   target:"static/pics/rsvp_133.png",
+    //   competitor: "static/pics/rsvp_166.png",
+    //   actor:"static/pics/mpic_436.png", 
+    //   itemID: 1,
+    //   data: { // write all relevant trial data to data file
+    //     itemID: 'itemID',
+    //     turn: "right",
+    //     target_name: "leaf",
+    //     competitor_name: "pear",
+    //     actor_name: "girl",
+    //     target_file: "rsvp_133.png",
+    //     competitor_file: "rsvp_166.png",
+    //     actor_file: "mpic_436.png",
+    //   }
+    // }
+
+    
+       
+    var timelines = [];
+    var copyArray = trials_list;
+    copyArray.sort(() => Math.random() - Math.random()).slice(0, trials_list.length)
+
+    /*Get 3 random trials from NoLab-test-stimuli */
+    for (let index = 0; index < 3 ; index++) {
+      if(index > copyArray.length){
+        break;
+      }
+      let randomElementSelected = copyArray[index];
+      
+      let element = 
+      {
+        type: 'test-motion-event-audio-response',
+        turn:  randomElementSelected['turn'],
+        target:"static/pics/"+randomElementSelected['target_file']+".png",
+        competitor: "static/pics/"+randomElementSelected['competitor_file']+".png",
+        actor:"static/pics/"+randomElementSelected['actor_file']+".png", 
+        itemID: randomElementSelected['itemID'],
+        data: { // write all relevant trial data to data file
+          "itemID": randomElementSelected['itemID'],
+          "turn": randomElementSelected['turn'],
+          "actor": randomElementSelected['actor'],
+          "actor_file": randomElementSelected['actor_file'],
+          "target": randomElementSelected['target'],
+          "competitor": randomElementSelected['competitor'],
+          "target_file": randomElementSelected['target_file'],
+          "competitor_file": randomElementSelected['competitor_file'],
+        }
+      };
+
+      timelines.push(element);
+    }
+    
+    var main_trial = {  
+      timeline: timelines,
+      randomize_order: true
+    }
+        
+    //// ============= Functions for running the experiment ============= ////
+
+
+            /* Set up audio stream */
+
+    var audio_context;
+    var input;
+
+    function initExp() {
+        try {
+              // webkit shim
+              window.AudioContext = window.AudioContext || window.webkitAudioContext;
+              navigator.getUserMedia = ( navigator.getUserMedia ||
+                               navigator.webkitGetUserMedia ||
+                               navigator.mozGetUserMedia ||
+                               navigator.msGetUserMedia);
+              window.URL = window.URL || window.webkitURL;
+
+              audio_context = new AudioContext;
+              console.log('Audio context set up.');
+              console.log('navigator.getUserMedia ' + (navigator.getUserMedia ? 'available.' : 'not present!'));
+            } catch (e) {
+              alert('No web audio support in this browser!');
+            }
+
+
+        navigator.mediaDevices.getUserMedia({audio: true})
+        .then(startUserMedia)
+        .catch(function(err) {
+          console.log('No live audio input: ' + err);
+          alert("No microphone detected. Please make sure your microphone is switched on and retry.");
+        });
+    }
+
+
+    function startUserMedia(stream) {
+        input = audio_context.createMediaStreamSource(stream);
+        console.log(input);
+        console.log('Media stream created.' );
+        console.log("input sample rate " +input.context.sampleRate);
+
+        // Feedback!
+        //input.connect(audio_context.destination);
+        //console.log('Input connected to audio context destination.');
+
+    }
+    
+
+  var end_screen = { // end screen
+    type: 'image-keyboard-response',
+    stimulus: '',//'static//pics/logo.png',
+    maintain_aspect_ratio: false,
+    prompt:'<p> Trials completed! You may now close the browser.</p><br>'
+  };
+
+var pavlovia_init = {
+	type: "pavlovia",
+	command: "init",
+};
+
+var pavlovia_finish = {
+	type: "pavlovia",
+	command: "finish",
+	};
+
+
+    function runExperiment() {
+        jsPsych.init({
+            timeline: [welcome, pavlovia_init, main_trial, pavlovia_finish, end_screen],
+            exclusions: { // exclude participans based on browser features: access to WebAudio API + window size
+            audio: true,
+            fullscreen: true,
+            override_safe_mode: true,
+          },
+      });
+    }
+
+
+    /* Start experiment */
+     initExp(); // initiate
+  //  check that participants clicked the start button
+    document.querySelector('#start-button').addEventListener('click', function() {
+      audio_context.resume().then(() => {
+        console.log('Playback resumed successfully'); // resume audio context
+      });
+      runExperiment(); // if they clicked, run experiment
+    });
+
+
+  </script>
+</html>
